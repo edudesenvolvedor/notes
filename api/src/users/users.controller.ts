@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, UseGuards, Req, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RefreshToken } from './dto/refresh.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -32,7 +40,10 @@ export class UsersController {
   }
 
   @Post('password/recovery/:token')
-  changePasswordAfterRecovery(@Body() changePasswordAfterRecovery: any, @Param('token') token: string) {
+  changePasswordAfterRecovery(
+    @Body() changePasswordAfterRecovery: any,
+    @Param('token') token: string,
+  ) {
     return this.usersService.ChangePasswordAfterRecovery(
       changePasswordAfterRecovery,
       token,

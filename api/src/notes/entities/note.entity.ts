@@ -3,40 +3,35 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
-  Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { Note } from '../../notes/entities/note.entity';
+import { User } from '../../users/entity/user.entity';
 
 @Entity()
-export class User {
+export class Note {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  name: string;
+  title: string;
 
   @Column()
-  @Unique(['email'])
-  email: string;
+  content: string;
 
-  @Column()
-  password: string;
-
-  @OneToMany(() => Note, (note) => note.user)
-  notes: Note[];
+  @ManyToOne(() => User, (user) => user.notes)
+  user: User;
 
   @Column()
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: string;
 
   @Column()
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: string;
 
   @Column()
   @DeleteDateColumn()
-  deletedAt: Date;
+  deleted_at: string;
 }
