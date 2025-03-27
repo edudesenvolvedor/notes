@@ -12,6 +12,7 @@ import {
   encryptPassword,
   generationTokenToRecoveryPassword,
   validatePassword,
+  verifyJwt,
 } from '../services/security';
 import { RecoveryPassword } from './dto/recovery-password.dto';
 import { sendEmailRecoveryAccount } from '../services/email';
@@ -32,9 +33,13 @@ export class UsersService {
   ) {}
 
   async refresh(data: RefreshToken) {
-    const { id }: { id: string } = this.jwtService.decode(data.token);
+    const jwt = verifyJwt(data.token);
 
-    const user = await this.userRepository.findOneBy({ id: parseInt(id) });
+    if (!jwt) return null;
+
+    const user = await this.userRepository.findOneBy({
+      id: jwt.id,
+    });
 
     if (!user) return null;
 
@@ -48,8 +53,8 @@ export class UsersService {
     };
   }
 
-  me(req: any) {
-    return JSON.stringify(req.user);
+  async me(userReq: any) {
+    return this.userRepository.findOne({ where: { id: userReq.id } });
   }
 
   async changePassword(passwordChange: PasswordChange, user: User) {
@@ -59,7 +64,11 @@ export class UsersService {
       return { success: false, errors: parsedPassword.error.errors };
     }
 
-    const userFind = await this.userRepository.findOneBy({ id: user.id });
+    const userFind = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :id', { id: user.id })
+      .getOne();
 
     if (
       !userFind ||

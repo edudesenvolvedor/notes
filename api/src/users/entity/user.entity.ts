@@ -22,7 +22,7 @@ export class User {
   @Unique(['email'])
   email: string;
 
-  @Column()
+  @Column({ select: false })
   password: string;
 
   @OneToMany(() => Note, (note) => note.user)

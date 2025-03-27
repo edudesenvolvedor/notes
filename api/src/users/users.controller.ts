@@ -6,47 +6,170 @@ import {
   UseGuards,
   Req,
   Param,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RefreshToken } from './dto/refresh.dto';
+import { RefreshToken, RefreshTokenSchema } from './dto/refresh.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PasswordChange } from './dto/password-change.dto';
-import { RecoveryPassword } from './dto/recovery-password.dto';
+import {
+  PasswordChange,
+  PasswordChangeSchema,
+} from './dto/password-change.dto';
+import {
+  RecoveryPassword,
+  RecoveryPasswordSchema,
+} from './dto/recovery-password.dto';
+import { z } from 'zod';
+import { zodFormatError } from '../helpers/exception/zod-format-error';
+import {
+  EmailInvalidException,
+  InvalidRefreshTokenException,
+  PasswordIncorrectException,
+  UserNotFoundException,
+} from '../helpers/exception/users-http-exception';
+import { InternalServerErrorException } from '../helpers/exception/http-exception';
+import {
+  ChangePasswordAfterRecovery,
+  ChangePasswordAfterRecoverySchema,
+} from './dto/change-password-after-recovery.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('refresh')
-  refresh(@Body() payload: RefreshToken) {
-    return this.usersService.refresh(payload);
+  @UseGuards(JwtAuthGuard)
+  async refresh(@Body() payload: RefreshToken) {
+    try {
+      RefreshTokenSchema.parse(payload);
+
+      const result = await this.usersService.refresh(payload);
+
+      if (!result) {
+        throw new InvalidRefreshTokenException();
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new HttpException(zodFormatError(error), HttpStatus.BAD_REQUEST);
+      }
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException();
+    }
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@Req() req: any) {
-    return this.usersService.me(req);
+  async me(@Req() req: any) {
+    try {
+      const user = await this.usersService.me(req.user.id);
+
+      if (!user) {
+        throw new UserNotFoundException();
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   @Post('password/change')
   @UseGuards(JwtAuthGuard)
-  passwordChange(@Body() passwordChange: PasswordChange, @Req() req: any) {
-    return this.usersService.changePassword(passwordChange, req.user);
+  async passwordChange(
+    @Body() passwordChange: PasswordChange,
+    @Req() req: any,
+  ) {
+    try {
+      PasswordChangeSchema.parse(passwordChange);
+
+      const result = await this.usersService.changePassword(
+        passwordChange,
+        req.user,
+      );
+
+      if (!result?.success) {
+        throw new PasswordIncorrectException();
+      }
+
+      return {
+        message: 'Password changed successfully',
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new HttpException(zodFormatError(error), HttpStatus.BAD_REQUEST);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException();
+    }
   }
 
   @Post('password/recovery')
-  recoveryPassword(@Body() recoveryPassword: RecoveryPassword) {
-    return this.usersService.recoveryPassword(recoveryPassword);
+  async recoveryPassword(@Body() recoveryPassword: RecoveryPassword) {
+    try {
+      RecoveryPasswordSchema.parse(recoveryPassword);
+
+      const result = await this.usersService.recoveryPassword(recoveryPassword);
+
+      if (!result) {
+        throw new EmailInvalidException();
+      }
+      return {
+        message: 'Password recovery link sent successfully.',
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new HttpException(zodFormatError(error), HttpStatus.BAD_REQUEST);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException();
+    }
   }
 
   @Post('password/recovery/:token')
-  changePasswordAfterRecovery(
-    @Body() changePasswordAfterRecovery: any,
+  async changePasswordAfterRecovery(
+    @Body() changePasswordAfterRecovery: ChangePasswordAfterRecovery,
     @Param('token') token: string,
   ) {
-    return this.usersService.ChangePasswordAfterRecovery(
-      changePasswordAfterRecovery,
-      token,
-    );
+    try {
+      ChangePasswordAfterRecoverySchema.parse(changePasswordAfterRecovery);
+
+      const result = await this.usersService.ChangePasswordAfterRecovery(
+        changePasswordAfterRecovery,
+        token,
+      );
+
+      if (!result) {
+        throw new InvalidRefreshTokenException();
+      }
+
+      return {
+        message: 'Password successfully changed.',
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new HttpException(zodFormatError(error), HttpStatus.BAD_REQUEST);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException();
+    }
   }
 }

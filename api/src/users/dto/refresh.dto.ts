@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-export const RefreshToken = z.object({
+export const RefreshTokenSchema = z.object({
   token: z.string(),
 });
 
-export type RefreshToken = z.infer<typeof RefreshToken>;
+export type RefreshToken = z.infer<typeof RefreshTokenSchema>;
