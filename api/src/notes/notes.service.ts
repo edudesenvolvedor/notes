@@ -20,29 +20,28 @@ export class NotesService {
       where: { id: userReq.id },
     });
 
-    if (!user) {
-      throw new Error('Usuário não encontrado');
-    }
+    if (!user) return { success: false };
 
     const note = this.notesRepository.create({
       ...createNote,
       user,
     });
 
-    return await this.notesRepository.save(note);
+    return {
+      success: true,
+      ...(await this.notesRepository.save(note)),
+    };
   }
 
   async findAll(userReq: any) {
     return await this.notesRepository.find({
       where: { user: { id: userReq.id } },
-      relations: ['user'],
     });
   }
 
   async findOne(id: number, userReq: any) {
     return await this.notesRepository.find({
       where: { id, user: { id: userReq.id } },
-      relations: ['user'],
     });
   }
 
@@ -52,17 +51,13 @@ export class NotesService {
       relations: ['user'],
     });
 
-    if (!note) {
-      throw new Error('Nota não encontrada');
-    }
+    if (!note) return { success: false };
 
-    if (note.user.id !== userReq.id) {
-      throw new Error('Você não tem permissão para editar esta nota');
-    }
+    if (note.user.id !== userReq.id) return { success: false };
 
     Object.assign(note, updateNote);
 
-    return await this.notesRepository.save(note);
+    return { success: true, ...(await this.notesRepository.save(note)) };
   }
 
   async remove(id: number, userReq: any) {
@@ -71,20 +66,14 @@ export class NotesService {
       relations: ['user'],
     });
 
-    if (!note) {
-      throw new Error('Nota não encontrada');
-    }
+    if (!note) return { success: false };
 
-    if (note.user.id !== userReq.id) {
-      throw new Error('Você não tem permissão para excluir esta nota');
-    }
+    if (note.user.id !== userReq.id) return { success: false };
 
     const result = await this.notesRepository.softDelete({ id });
 
-    if (result.affected === 0) {
-      throw new Error('Falha ao tentar excluir a nota');
-    }
+    if (result.affected === 0) return { success: false };
 
-    return { message: 'Nota deletada com sucesso' };
+    return { success: true };
   }
 }
