@@ -69,23 +69,35 @@ export class AuthService {
 
   async login(login: Login) {
     const { email, password } = login;
-    const user = await this.userRepository.findOneOrFail({
-      where: { email },
-    });
 
-    if (!user) return null;
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email=:email', { email: email })
+      .getOne();
 
-    if (!(await validatePassword(password, user.password))) return null;
+    if (!user) {
+      return { success: false };
+    }
+
+    const isPasswordValid = await validatePassword(password, user.password);
+    if (!isPasswordValid) {
+      return { success: false };
+    }
 
     const payload = {
       id: user.id,
       email: user.email,
     };
 
+    const access_token = this.jwtService.sign(payload);
+
     return {
+      success: true,
+      id: user.id,
       name: user.name,
-      email,
-      access_token: this.jwtService.sign(payload),
+      email: user.email,
+      access_token,
     };
   }
 

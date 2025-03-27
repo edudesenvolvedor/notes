@@ -1,7 +1,7 @@
 import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
 import { SignIn, SignInSchema } from './dto/signin-user.dto';
 import { AuthService } from './auth.service';
-import { Login } from './dto/login-user.dto';
+import { Login, LoginSchema } from './dto/login-user.dto';
 import { SignUp } from './dto/signup-user.dto';
 import { InvalidCredentials } from '../helpers/exception/auth-http-exception';
 import { InternalServerErrorException } from '../helpers/exception/http-exception';
@@ -36,8 +36,32 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() login: Login) {
-    return this.authService.login(login);
+  async login(@Body() login: Login) {
+    try {
+      LoginSchema.parse(login);
+
+      const result = await this.authService.login(login);
+
+      if (!result.success) {
+        throw new InvalidCredentials();
+      }
+
+      return {
+        success: true,
+        id: result.id,
+        email: result.email,
+        access_token: result.access_token,
+      };
+    } catch (error) {
+      console.log(error)
+      if (error instanceof z.ZodError) {
+        throw new HttpException(zodFormatError(error), HttpStatus.BAD_REQUEST);
+      }
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   @Post('signup')
