@@ -1,4 +1,3 @@
-import './App.css'
 import {Button} from "@radix-ui/themes";
 
 function App() {
