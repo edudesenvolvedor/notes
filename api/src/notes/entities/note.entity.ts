@@ -3,9 +3,11 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from '../../users/entity/user.entity';
 
 @Entity()
 export class Note {
@@ -17,6 +19,9 @@ export class Note {
 
   @Column()
   content: string;
+
+  @ManyToOne(() => User, (user) => user.notes)
+  user: User;
 
   @Column()
   @CreateDateColumn()
