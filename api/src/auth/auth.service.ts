@@ -17,25 +17,30 @@ export class AuthService {
   ) {}
 
   async signIn(signIn: SignIn) {
-    const userDTO: null | SignIn = this.validateUser(signIn);
-    if (!userDTO) return null;
+    const existingUser = await this.userRepository.findOneBy({
+      email: signIn.email,
+    });
+    if (existingUser) return { success: false };
 
-    const payload = {
-      id: 0,
-      name: userDTO.name,
-      email: userDTO.email,
-    };
-
-    const { email } = await this.createUser(
-      userDTO.name,
-      userDTO.email,
-      userDTO.password,
+    const user = await this.createUser(
+      signIn.name,
+      signIn.email,
+      signIn.password,
     );
 
+    const payload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
+
+    const access_token = this.jwtService.sign(payload);
+
     return {
-      id: 0,
-      email,
-      access_token: this.jwtService.sign(payload),
+      success: true,
+      id: user.id,
+      email: user.email,
+      access_token,
     };
   }
 
