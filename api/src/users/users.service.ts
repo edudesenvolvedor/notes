@@ -2,12 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { RefreshToken } from './dto/refresh.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-import { User } from './entity/user.entity';
+import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  PasswordChange,
-  PasswordChangeSchema,
-} from './dto/password-change.dto';
+import { PasswordChange } from './dto/password-change.dto';
 import {
   encryptPassword,
   generationTokenToRecoveryPassword,
@@ -16,11 +13,8 @@ import {
 } from '../services/security';
 import { RecoveryPassword } from './dto/recovery-password.dto';
 import { sendEmailRecoveryAccount } from '../services/email';
-import { RecoveryToken } from './entity/recovery-token.entity';
-import {
-  ChangePasswordAfterRecovery,
-  ChangePasswordAfterRecoverySchema,
-} from './dto/change-password-after-recovery.dto';
+import { RecoveryToken } from './entities/recovery-token.entity';
+import { ChangePasswordAfterRecovery } from './dto/change-password-after-recovery.dto';
 
 @Injectable()
 export class UsersService {
@@ -34,36 +28,31 @@ export class UsersService {
 
   async refresh(data: RefreshToken) {
     const jwt = verifyJwt(data.token);
+    if (!jwt) return { success: false };
 
-    if (!jwt) return null;
+    const user = await this.userRepository.findOneBy({ id: jwt.id });
+    if (!user) return { success: false };
 
-    const user = await this.userRepository.findOneBy({
-      id: jwt.id,
-    });
+    const payload = { id: user.id, email: user.email };
+    const token = this.jwtService.sign(payload);
 
-    if (!user) return null;
-
-    const payload = {
-      id: user.id,
-      email: user.email,
-    };
-
-    return {
-      token: this.jwtService.sign(payload),
-    };
+    return { success: true, token };
   }
 
   async me(userReq: any) {
-    return this.userRepository.findOne({ where: { id: userReq.id } });
+    const user = await this.userRepository.findOne({
+      where: { id: userReq.id },
+    });
+
+    if (!user) return { success: false };
+
+    return { success: true, user };
   }
 
-  async changePassword(passwordChange: PasswordChange, user: User) {
-    const parsedPassword = PasswordChangeSchema.safeParse(passwordChange);
-
-    if (!parsedPassword.success) {
-      return { success: false, errors: parsedPassword.error.errors };
-    }
-
+  async changePassword(
+    { password_current, new_password }: PasswordChange,
+    user: User,
+  ) {
     const userFind = await this.userRepository
       .createQueryBuilder('user')
       .addSelect('user.password')
@@ -72,77 +61,51 @@ export class UsersService {
 
     if (
       !userFind ||
-      !(await validatePassword(
-        passwordChange.password_current,
-        userFind.password,
-      ))
+      !(await validatePassword(password_current, userFind.password))
     ) {
-      return null;
+      return { success: false };
     }
 
-    userFind.password = await encryptPassword(passwordChange.new_password);
+    userFind.password = await encryptPassword(new_password);
 
-    const userWithNewPassword = await this.userRepository.update(
-      user.id,
-      userFind,
-    );
+    await this.userRepository.update(user.id, userFind);
 
-    return { success: true, user: userWithNewPassword };
+    return { success: true, user: userFind };
   }
 
-  async recoveryPassword(recoveryPassword: RecoveryPassword) {
-    const userFind = await this.userRepository.findOneBy({
-      email: recoveryPassword.email,
-    });
+  async recoveryPassword({ email }: RecoveryPassword) {
+    const user = await this.userRepository.findOneBy({ email });
+    if (!user) return { success: false };
 
-    if (!userFind) return null;
+    const expirationDate = new Date();
+    expirationDate.setHours(expirationDate.getHours() + 12);
 
-    const date = new Date();
-    date.setHours(date.getHours() + 12);
-
+    const token = await generationTokenToRecoveryPassword();
     const recoveryToken = this.recoveryPasswordRepository.create({
-      email: recoveryPassword.email,
-      token: await generationTokenToRecoveryPassword(),
-      validate_token: date.toISOString(),
+      email,
+      token,
+      validate_token: expirationDate.toISOString(),
     });
 
     await this.recoveryPasswordRepository.save(recoveryToken);
-
-    await sendEmailRecoveryAccount(userFind.email, recoveryToken.token);
+    await sendEmailRecoveryAccount(user.email, token);
 
     return { success: true };
   }
 
-  async ChangePasswordAfterRecovery(
-    changePasswordAfterRecovery: ChangePasswordAfterRecovery,
+  async changePasswordAfterRecovery(
+    { new_password }: ChangePasswordAfterRecovery,
     token: string,
   ) {
-    const parsedPassword = ChangePasswordAfterRecoverySchema.safeParse(
-      changePasswordAfterRecovery,
-    );
+    const recovery = await this.recoveryPasswordRepository.findOneBy({ token });
+    if (!recovery) return { success: false };
 
-    if (!parsedPassword.success)
-      return { success: false, errors: parsedPassword.error.errors };
-
-    const authorizationRecoveryFind =
-      await this.recoveryPasswordRepository.findOneBy({
-        token: token,
-      });
-
-    if (!authorizationRecoveryFind) return null;
-
+    const hashedPassword = await encryptPassword(new_password);
     const userUpdate = await this.userRepository.update(
-      { email: authorizationRecoveryFind.email },
-      {
-        password: await encryptPassword(
-          changePasswordAfterRecovery.new_password,
-        ),
-      },
+      { email: recovery.email },
+      { password: hashedPassword },
     );
 
-    return {
-      success: true,
-      user: userUpdate,
-    };
+    return { success: true, user: userUpdate };
   }
 }

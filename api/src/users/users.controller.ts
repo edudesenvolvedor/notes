@@ -46,7 +46,7 @@ export class UsersController {
 
       const result = await this.usersService.refresh(payload);
 
-      if (!result) {
+      if (!result.success) {
         throw new InvalidRefreshTokenException();
       }
 
@@ -70,7 +70,7 @@ export class UsersController {
     try {
       const user = await this.usersService.me(req.user.id);
 
-      if (!user) {
+      if (!user.success) {
         throw new UserNotFoundException();
       }
 
@@ -97,7 +97,7 @@ export class UsersController {
         req.user,
       );
 
-      if (!result?.success) {
+      if (!result.success) {
         throw new PasswordIncorrectException();
       }
 
@@ -123,7 +123,7 @@ export class UsersController {
 
       const result = await this.usersService.recoveryPassword(recoveryPassword);
 
-      if (!result) {
+      if (!result.success) {
         throw new EmailInvalidException();
       }
       return {
@@ -149,12 +149,12 @@ export class UsersController {
     try {
       ChangePasswordAfterRecoverySchema.parse(changePasswordAfterRecovery);
 
-      const result = await this.usersService.ChangePasswordAfterRecovery(
+      const result = await this.usersService.changePasswordAfterRecovery(
         changePasswordAfterRecovery,
         token,
       );
 
-      if (!result) {
+      if (!result.success) {
         throw new InvalidRefreshTokenException();
       }
 

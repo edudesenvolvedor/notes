@@ -4,8 +4,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './users/entity/user.entity';
-import { RecoveryToken } from './users/entity/recovery-token.entity';
+import { User } from './users/entities/user.entity';
+import { RecoveryToken } from './users/entities/recovery-token.entity';
 import { NotesModule } from './notes/notes.module';
 import { ConfigModule } from '@nestjs/config';
 

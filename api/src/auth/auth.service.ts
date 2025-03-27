@@ -3,7 +3,7 @@ import { encryptPassword, validatePassword } from '../services/security';
 import { SignIn, SignInSchema } from './dto/signin-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-import { User } from '../users/entity/user.entity';
+import { User } from '../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Login } from './dto/login-user.dto';
 import { SignUp } from './dto/signup-user.dto';
