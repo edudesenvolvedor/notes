@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entity/user.entity';
 import { RecoveryToken } from './users/entity/recovery-token.entity';
 import { NotesModule } from './notes/notes.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -20,9 +21,12 @@ import { NotesModule } from './notes/notes.module';
       autoLoadEntities: true,
     }),
     TypeOrmModule.forFeature([User]),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     NotesModule,
   ],
-  controllers: [AuthController, UsersController], // OK
+  controllers: [AuthController, UsersController],
   providers: [],
 })
 export class AppModule {}
