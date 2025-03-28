@@ -9,6 +9,8 @@ import {Login} from "./pages/auth/Login";
 import {SignUp} from "./pages/auth/SignUp";
 import {RecoveryPassword} from "./pages/auth/RecoveryPassword";
 import {ChangePassword} from "./pages/auth/ChangePassword";
+import {Dashboard} from "./pages/app/Dashboard";
+import {NotesProvider} from "./contexts/NotesContext.tsx";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -23,6 +25,13 @@ createRoot(document.getElementById('root')!).render(
                           <Route path={"recovery"} element={<RecoveryPassword/>}/>
                           <Route path={"change"} element={<ChangePassword/>}/>
                       </Route>
+                  </Route>
+                  <Route path={"app"}>
+                      <Route index element={
+                          <NotesProvider>
+                              <Dashboard/>
+                          </NotesProvider>
+                      } />
                   </Route>
               </Routes>
           </BrowserRouter>
