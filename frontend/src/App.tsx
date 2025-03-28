@@ -1,13 +1,15 @@
-import {Button} from "@radix-ui/themes";
+import {useEffect} from "react";
+import {useNavigate} from "react-router";
 
 function App() {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        navigate("/app")
+    }, []);
 
   return (
     <>
-        <h1 className="text-3xl font-bold underline">
-            Hello world!
-            <Button size={"3"}>Click Me!</Button>
-        </h1>
     </>
   )
 }
