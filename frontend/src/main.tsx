@@ -11,6 +11,8 @@ import {RecoveryPassword} from "./pages/auth/RecoveryPassword";
 import {ChangePassword} from "./pages/auth/ChangePassword";
 import {Dashboard} from "./pages/app/Dashboard";
 import {NotesProvider} from "./contexts/NotesContext.tsx";
+import {AuthenticationPage} from "./pages/auth/AuthenticationPage";
+import {NotAuthenticationPage} from "./pages/auth/NotAuthenticationPage";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,15 +20,17 @@ createRoot(document.getElementById('root')!).render(
           <BrowserRouter>
               <Routes>
                   <Route path={"/"} element={<App/>}/>
-                  <Route path={"auth"}>
-                      <Route path={"login"} element={<Login/>}/>
-                      <Route path={"signup"} element={<SignUp/>}/>
-                      <Route path={"password"}>
-                          <Route path={"recovery"} element={<RecoveryPassword/>}/>
-                          <Route path={"change"} element={<ChangePassword/>}/>
+                  <Route element={<NotAuthenticationPage/>}>
+                      <Route path={"auth"}>
+                          <Route path={"login"} element={<Login/>}/>
+                          <Route path={"signup"} element={<SignUp/>}/>
+                          <Route path={"password"}>
+                              <Route path={"recovery"} element={<RecoveryPassword/>}/>
+                              <Route path={"change"} element={<ChangePassword/>}/>
+                          </Route>
                       </Route>
                   </Route>
-                  <Route path={"app"}>
+                  <Route element={<AuthenticationPage/>} path={"app"}>
                       <Route index element={
                           <NotesProvider>
                               <Dashboard/>

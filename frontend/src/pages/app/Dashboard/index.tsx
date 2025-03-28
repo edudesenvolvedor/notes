@@ -4,17 +4,28 @@ import {NotesContext} from "../../../contexts/NotesContext.tsx";
 import {Note} from "../../../components/Note.tsx";
 import {ButtonDialogCreateNote} from "../../../components/ButtonDialogCreateNote.tsx";
 import {PanelEmptyNotes} from "../../../components/PanelEmptyNotes.tsx";
+import {destroySession} from "../../../lib/helpers/session.ts";
+import {useNavigate} from "react-router";
+import {deleteNotesRequest} from "../../../lib/data/deleteNotesRequest.ts";
 
 export const Dashboard = () => {
+    const navigate = useNavigate();
+
     const context = useContext(NotesContext)
 
     if (!context) {
         throw new Error("NotesContext must be used within a NotesProvider");
     }
 
-    const deleteNote = (id: number) => {
+    const deleteNote = async (id: number) => {
         context.setNotes(context.notes.filter(note => note.id !== id));
+        await deleteNotesRequest(id.toString())
     };
+
+    const handleLogout = () => {
+        destroySession()
+        navigate('/auth/login');
+    }
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -30,7 +41,7 @@ export const Dashboard = () => {
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Content>
                             <DropdownMenu.Item>Perfil</DropdownMenu.Item>
-                            <DropdownMenu.Item color={"red"}>Sair</DropdownMenu.Item>
+                            <DropdownMenu.Item color={"red"} onClick={handleLogout}>Sair</DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Root>
                 </div>
@@ -45,7 +56,7 @@ export const Dashboard = () => {
                 </div>
                 <div className="space-y-4">
                     {context.notes.map(note => (
-                        <Note id={note.id} title={note.title} content={note.content} onClick={() => deleteNote(note.id)}/>
+                        <Note key={note.id} title={note.title} content={note.content} onClick={() => deleteNote(note.id)}/>
                     ))}
                 </div>
             </div>

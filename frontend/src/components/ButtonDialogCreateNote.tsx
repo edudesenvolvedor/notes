@@ -1,6 +1,8 @@
-import {useContext, useState} from "react";
-import {NotesContext} from "../contexts/NotesContext.tsx";
+import {useCallback, useContext, useState} from "react";
+import {Note, NotesContext} from "../contexts/NotesContext.tsx";
 import {Button, Dialog, Flex, Text, TextArea, TextField} from "@radix-ui/themes";
+import {createNotesRequest} from "../lib/data/createNotesRequest.ts";
+import {getListNotesRequest} from "../lib/data/getListNotesRequest.ts";
 
 type ButtonDialogCreateNoteProps = {
     children: string;
@@ -8,19 +10,47 @@ type ButtonDialogCreateNoteProps = {
 }
 
 export const ButtonDialogCreateNote = ({ children }: ButtonDialogCreateNoteProps) => {
-    const context = useContext(NotesContext)
+    const context = useContext(NotesContext);
 
     if (!context) {
         throw new Error("NotesContext must be used within a NotesProvider");
     }
 
-    const [newNote, setNewNote] = useState({ title: "", content: "" });
-    const addNote = () => {
-        if (!newNote.title || !newNote.content) return;
-        context.setNotes([...context.notes, { id: Date.now(), ...newNote }]);
-        setNewNote({ title: "", content: "" });
-        console.log(newNote);
+    const createNote = async (title: string, content: string) => {
+        try {
+            await createNotesRequest(title, content);
+        } catch (error) {
+            console.error("Erro ao criar nota:", error);
+        }
     };
+
+    const updateNotes = async () => {
+        try {
+            const notes = await getListNotesRequest();
+            context.setNotes(notes as Note[]);
+        } catch (error) {
+            console.error("Erro ao atualizar notas:", error);
+        }
+    };
+
+    const [newNote, setNewNote] = useState({ title: "", content: "" });
+
+    const addNote = useCallback(async () => {
+        if (!newNote.title || !newNote.content) return;
+
+        const noteToAdd = { id: Date.now(), ...newNote };
+
+        context.setNotes(prevNotes => [...prevNotes, noteToAdd]);
+
+        setNewNote({ title: "", content: "" });
+
+        try {
+            await createNote(newNote.title, newNote.content);
+            await updateNotes();
+        } catch (error) {
+            console.error("Erro ao adicionar nota:", error);
+        }
+    }, [newNote, context]);
 
     return (
         <Dialog.Root>

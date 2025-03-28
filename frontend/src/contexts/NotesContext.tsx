@@ -1,7 +1,7 @@
 import {createContext, Dispatch, ReactNode, SetStateAction, useEffect, useState} from "react";
-import {getListNotes} from "../lib/data/getListNotes.tsx";
+import {getListNotesRequest} from "../lib/data/getListNotesRequest.ts";
 
-interface Note {
+export interface Note {
     id: number;
     title: string;
     content: string;
@@ -17,9 +17,12 @@ export const NotesContext = createContext<NotesContextType | undefined>(undefine
 export const NotesProvider = ({ children }: { children: ReactNode }) => {
     const [notes, setNotes] = useState<Note[]>([]);
 
+    const getNotes = async () => {
+        setNotes(await getListNotesRequest() as Note[]);
+    }
+
     useEffect(() => {
-        const listNotes = getListNotes();
-        setNotes(listNotes);
+        getNotes().then()
     }, [])
 
     return (
